@@ -7,11 +7,10 @@ public class Main {
     String string = "10 3 1 2\n2 3 2 2\n5 6 7 1\n300 3 1 0";
     try {
     String[][] testArray = to2Darray(string);
-    sum(testArray);
-    } catch (myOwnException | ArrayIndexOutOfBoundsException e) {
+        System.out.println("The result of calculations is: " + sum(testArray));
+    } catch (myOwnException | ArrayIndexOutOfBoundsException|myOwnNumberFormatEx e) {
             e.printStackTrace();
-    System.out.println(e);
-        }
+          }
     }
 
     private static String[][] to2Darray(String string) throws myOwnException, ArrayIndexOutOfBoundsException {
@@ -30,7 +29,7 @@ public class Main {
         return arr2;
     }
 
-    private static int sum(String[][] arr) {
+    private static int sum(String[][] arr) throws myOwnNumberFormatEx {
         int sum = 0;
 try {
 
@@ -41,7 +40,7 @@ try {
         }
     }
 } catch (NumberFormatException e) {
-    System.out.println("Please, make sure that you have digits in array");
+    throw new myOwnNumberFormatEx();
 }
         return sum / 2;
     }
