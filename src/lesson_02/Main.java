@@ -5,14 +5,8 @@ public class Main {
 
     public static void main(String[] args) throws myOwnNumberFormatEx {
     String string = "10 3 1 2\n2 3 2 2\n5 6 7 1\n300 3 1 0";
-//    try {                                                        закоментил пример обработки в блоке трай/кэтч
-//                                                                 чтобы работал конструктор класса ошибки
     String[][] testArray = to2Darray(string);
         System.out.println("The result of calculations is: " + sum(testArray));
-//    } catch (myOwnException |myOwnNumberFormatEx e) {
-//            e.printStackTrace();
-//          }
-
     }
 
     private static String[][] to2Darray(String string) throws myOwnException {
