@@ -12,15 +12,10 @@ public class Main {
     private static String[][] to2Darray(String string) throws MyOwnException {
         String[] arr = string.split("\n");
         if (arr.length != 4) throw new MyOwnException("It isn`t a matrix 4x4");
-        String[][] arr2 = new String[4][4];
+        String[][] arr2 = new String[4][];
 
         for (int i = 0; i < arr.length; i++) {
-            for (int j = 0; j < arr.length; j++) {
-                String[] temparr = arr[i].split(" ");
-                if (temparr.length != arr2[i].length)
-                    throw new MyOwnException("Your column doesn`t contain 4 symbols");
-                arr2[i][j] = temparr[j];
-            }
+            arr2[i] = arr[i].split(" ");
         }
         return arr2;
     }
