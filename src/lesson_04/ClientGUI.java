@@ -96,6 +96,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             String message = tfMessage.getText();
             try {
                 writeMessage(message);
+                log.append(message+'\n');
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -129,6 +130,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         if (e.getKeyCode() == 10) {
             String message = tfMessage.getText();
             try {
+                log.append(message+'\n');
                 writeMessage(message);
 
             } catch (IOException ex) {
