@@ -97,6 +97,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             try {
                 writeMessage(message);
                 log.append(message+'\n');
+                tfMessage.requestFocusInWindow();
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
