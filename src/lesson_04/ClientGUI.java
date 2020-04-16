@@ -7,7 +7,6 @@ import java.awt.event.ActionListener;
 import java.awt.event.*;
 import java.io.*;
 
-
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, KeyListener {
 
     private static final int WIDTH = 400;
@@ -30,7 +29,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JList<String> userList = new JList<>();
 
     public static void main(String[] args) {
-
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
@@ -102,8 +100,6 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 ex.printStackTrace();
             }
             tfMessage.setText("");
-
-
         }
         else {
             throw new RuntimeException("Unknown source:" + src);
