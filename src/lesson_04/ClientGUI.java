@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.*;
+import java.io.*;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
 
@@ -26,11 +28,14 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
 
     private final JList<String> userList = new JList<>();
 
+    private boolean showIoErrors = false;
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
                 new ClientGUI();
+
             }
         });
     }
@@ -51,6 +56,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         log.setWrapStyleWord(true);
         log.setEditable(false);
         cbAlwaysOnTop.addActionListener(this);
+        btnSend.addActionListener(this);
+        tfMessage.addActionListener(this);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -74,8 +81,59 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         Object src = e.getSource();
         if (src == cbAlwaysOnTop) {
             setAlwaysOnTop(cbAlwaysOnTop.isSelected());
-        } else {
+        }
+        else if (src == btnSend || src == tfMessage){
+            sendMessage();
+        }
+        else {
             throw new RuntimeException("Unknown source:" + src);
+        }
+    }
+
+    private void sendMessage() {
+        String message = tfMessage.getText();
+        String username = tfLogin.getText();
+        if("".equals(message)) return;
+        tfMessage.setText(null);
+        tfMessage.requestFocusInWindow();
+      putlog(String.format("%s: %s", username, message));
+      writeMessage(message,username);
+
+    }
+
+    private void putlog(String message) {
+        if("".equals(message)) return;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append(message+System.lineSeparator());
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
+
+
+    public  void writeMessage(String message, String username) {
+        try(FileWriter out = new FileWriter("myChatLogFile.txt", true)) {
+            out.write(username + ": " + message + "\n");
+            out.flush();
+        } catch (IOException e) {
+            if(!showIoErrors) {
+                showIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+    }
+
+    private void showException(Thread t, Throwable e) {
+        String msg;
+        StackTraceElement[] ste = e.getStackTrace();
+        if(ste.length ==0)
+            msg = "Empty Stacktrace";
+        else {
+            msg = String.format("Exception in \"%s\" %s: %s\n\tat %s",
+                    t.getName(), e.getClass().getCanonicalName(), e.getMessage(), ste[0]);
+            JOptionPane.showMessageDialog(this, msg, "Exception", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -89,4 +147,5 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         JOptionPane.showMessageDialog(this, msg, "Exception", JOptionPane.ERROR_MESSAGE);
         System.exit(1);
     }
-}
+
+  }
