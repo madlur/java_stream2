@@ -1,65 +1,66 @@
 package lesson_05;
 
+import java.util.Arrays;
+
 public class Main {
-    static final Object mon = new Object();
+    private static final int SIZE = 10_000_000;
+    private static final int HALF_SIZE = SIZE / 2;
+    private static final float[] arrOne = new float[SIZE];
+    private static final float[] arrTwo = new float[SIZE];
 
     public static void main(String[] args) {
 
-        method1();
-        method2();
+        Arrays.fill(arrOne, 1f);
+        Arrays.fill(arrTwo, 1f);
 
-    }
+        long beginTime = System.nanoTime();
+        calculateArray(arrOne);
+        long deltaTime = System.nanoTime() - beginTime;
+        System.out.println("One thread time: " + deltaTime * 1e-9f);
 
-    private synchronized static void method1() {
-        final int size = 10000000;
-        float[] arr = new float[size];
+        beginTime = System.nanoTime();
+        calculateArrayTwoThreads(arrTwo);
+        deltaTime = System.nanoTime() - beginTime;
+        System.out.println("Two threads time: " + deltaTime * 1e-9f);
 
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = 1;
-        }
-        long a = System.currentTimeMillis();
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = (float) (arr[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
-        }
-        System.out.println("Working time of method1 is: " + (System.currentTimeMillis() - a) + " milliseconds");
-
-    }
-
-    static void method2() {
-
-        final int size = 10000000;
-        final int h = size / 2;
-        float[] arr = new float[size];
-        float[] arr1 = new float[h];
-        float[] arr2 = new float[h];
-        for (int i = 0; i < arr.length; i++) {
-            arr[i] = 1;
-        }
-        long a = System.currentTimeMillis();
-        System.arraycopy(arr, 0, arr1, 0, h);
-        System.arraycopy(arr, h, arr2, 0, h);
-
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-
-            }
-        };
-        new Thread(r, "1").start();
-        new Thread(r, "2").start();
-        synchronized (mon) {
-            for (int i = 0; i < arr1.length; i++) {
-                arr1[i] = (float) (arr1[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
-            }
-
-            for (int i = 0; i < arr2.length; i++) {
-                arr2[i] = (float) (arr2[i] * Math.sin(0.2f + i / 5) * Math.cos(0.2f + i / 5) * Math.cos(0.4f + i / 2));
-            }
-
-            System.arraycopy(arr1, 0, arr, 0, h);
-            System.arraycopy(arr2, 0, arr, h, h);
-
-            System.out.println("Working time of method2 is: " + (System.currentTimeMillis() - a) + " milliseconds");
+        if (Arrays.equals(arrOne, arrTwo)) {
+            System.out.println("Arrays are equal");
+        } else {
+            System.out.println("Arrays are not equal");
         }
     }
-}
+
+    private static void calculateArray(float[] arr) {
+        for (int i = 0; i < arr.length; i++) {
+            arr[i] = (float) (arr[i] *
+                    Math.sin(0.2f + i / 5) *
+                    Math.cos(0.2f + i / 5) *
+                    Math.cos(0.4f + i / 2));
+        }
+    }
+
+    private static void calculateArrayTwoThreads(float[] arr) {
+        final float[] a1 = new float[HALF_SIZE];
+        final float[] a2 = new float[HALF_SIZE];
+
+        System.arraycopy(arr, 0, a1, 0, HALF_SIZE);
+        System.arraycopy(arr, HALF_SIZE, a2, 0, HALF_SIZE);
+
+        CalcThread threadOne = new CalcThread(a1, 0);
+        CalcThread threadTwo = new CalcThread(a2, HALF_SIZE);
+
+        try {
+            threadOne.join();
+            threadTwo.join();
+// стартуем первый поток и пока нас не отпустит джоин - не стартанём второй
+//            new CalcThread(a1, 0).join();
+//            new CalcThread(a2, HALF_SIZE).join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        System.arraycopy(a1, 0, arr, 0, HALF_SIZE);
+        System.arraycopy(a2, 0, arr, HALF_SIZE, HALF_SIZE);
+    }
+    }
+
