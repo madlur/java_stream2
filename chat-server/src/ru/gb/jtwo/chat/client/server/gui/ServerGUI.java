@@ -1,4 +1,6 @@
-package lesson_04;
+package ru.gb.jtwo.chat.client.server.gui;
+
+import ru.gb.jtwo.chat.client.server.core.ChatServer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -49,8 +51,8 @@ public class ServerGUI extends JFrame implements ActionListener, Thread.Uncaught
         if (src == btnStart) {
             server.start(8189);
         } else if (src == btnStop) {
-//            server.stop();
-            throw new RuntimeException("Hello from EDT!");
+            server.stop();
+//            throw new RuntimeException("Hello from EDT!");
         } else {
             throw new RuntimeException("Unknown source:" + src);
         }
