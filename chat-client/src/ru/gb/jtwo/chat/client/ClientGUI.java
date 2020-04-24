@@ -1,5 +1,6 @@
 package ru.gb.jtwo.chat.client;
 
+import ru.gb.jtwo.chat.common.Library;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
 
@@ -91,14 +92,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             sendMessage();
         } else if (src == btnLogin) {
             connect();
-            panelTop.setVisible(false);
-            panelBottom.setVisible(true);
         } else if (src == btnDisconnect) {
-            panelTop.setVisible(true);
             socketThread.close();
-            panelBottom.setVisible(false);
-            }
-         else {
+        } else {
             throw new RuntimeException("Unknown source:" + src);
         }
     }
@@ -119,8 +115,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.setText(null);
         tfMessage.requestFocusInWindow();
         socketThread.sendMessage(msg);
-//        putLog(String.format("%s: %s", username, msg));
-//        wrtMsgToLogFile(msg, username);
+        //putLog(String.format("%s: %s", username, msg));
+        //wrtMsgToLogFile(msg, username);
     }
 
     private void wrtMsgToLogFile(String msg, String username) {
@@ -177,11 +173,18 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     @Override
     public void onSocketStop(SocketThread thread) {
         putLog("Stop");
+        panelBottom.setVisible(false);
+        panelTop.setVisible(true);
     }
 
     @Override
     public void onSocketReady(SocketThread thread, Socket socket) {
         putLog("Ready");
+        panelBottom.setVisible(true);
+        panelTop.setVisible(false);
+        String login = tfLogin.getText();
+        String password = new String(tfPassword.getPassword());
+        thread.sendMessage(Library.getAuthRequest(login, password));
     }
 
     @Override

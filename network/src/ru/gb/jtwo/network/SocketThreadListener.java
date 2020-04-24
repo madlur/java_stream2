@@ -11,4 +11,3 @@ public interface SocketThreadListener {
     void onSocketException(SocketThread thread, Throwable throwable);
 
 }
-
