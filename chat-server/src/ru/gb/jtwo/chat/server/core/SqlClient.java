@@ -1,4 +1,4 @@
-package ru.gb.jtwo.chat.core;
+package ru.gb.jtwo.chat.server.core;
 
 import java.sql.*;
 
