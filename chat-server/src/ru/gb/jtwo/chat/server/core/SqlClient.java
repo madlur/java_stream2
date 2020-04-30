@@ -29,16 +29,6 @@ public class SqlClient {
         return null;
     }
 
-    synchronized static void addClientToDB(String login, String password) {
-try {
-    connection.setAutoCommit(false);
-    statement.executeUpdate("INSERT INTO users (login, password, nickname) VALUES ('" + login +"', '"+ password + "', '"+ login + "')");
-    connection.commit();
-
-} catch (SQLException e) {
-    System.out.println("SQL Error in addClient method");
-}
-    }
 
     synchronized static void disconnect() {
         try {
