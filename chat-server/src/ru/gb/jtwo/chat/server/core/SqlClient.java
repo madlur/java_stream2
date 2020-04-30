@@ -1,4 +1,4 @@
-package ru.gb.jtwo.chat.core;
+package ru.gb.jtwo.chat.server.core;
 
 import java.sql.*;
 
@@ -28,6 +28,7 @@ public class SqlClient {
         }
         return null;
     }
+
 
     synchronized static void disconnect() {
         try {
