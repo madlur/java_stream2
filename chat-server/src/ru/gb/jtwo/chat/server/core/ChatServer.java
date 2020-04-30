@@ -143,11 +143,15 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String password = arr[2];
         String nickname = SqlClient.getNickname(login, password);
         if (nickname == null) {
-
-            putLog("Invalid login attempt: " + login);
-            client.authFail();
-            return;
+            SqlClient.addClientToDB(login,password);
+//            putLog("Invalid login attempt: " + login);
+//            client.authFail();
+            nickname = SqlClient.getNickname(login,password);
+            client.authAccept(nickname);
+            sendToAllAuthorizedClients(Library.getTypeBroadcast("Server: new user", nickname + " join us"));
+//            return;
         }
+
 
         else {
             ClientThread oldClient = findClientByNickname(nickname);
