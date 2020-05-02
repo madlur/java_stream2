@@ -19,7 +19,12 @@ public class Library {
     public static final String TYPE_BROADCAST = "/bcast";
     // то есть сообщение, которое будет посылаться всем
     public static final String TYPE_BCAST_CLIENT = "/client_msg";
+    public static final String TYPE_CHANGE_NICKNAME_CLIENT = "/client_change_nickname";
     public static final String USER_LIST = "/user_list";
+
+    public static String getTypeChangeNicknameClient(String msg) {
+        return TYPE_CHANGE_NICKNAME_CLIENT+ DELIMITER + msg;
+    }
 
     public static String getTypeBcastClient(String msg) {
         return TYPE_BCAST_CLIENT + DELIMITER + msg;

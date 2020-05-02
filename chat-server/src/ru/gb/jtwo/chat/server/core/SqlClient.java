@@ -29,6 +29,16 @@ public class SqlClient {
         return null;
     }
 
+    public synchronized static void changeNickName(String query) {
+
+        try {
+            statement.executeUpdate(query);
+
+        } catch (SQLException throwables) {
+            System.out.println("Change nickname exception");
+            throwables.printStackTrace();
+        }
+    }
 
     synchronized static void disconnect() {
         try {
