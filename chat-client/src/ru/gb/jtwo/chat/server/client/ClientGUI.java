@@ -143,11 +143,13 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         String newNickname = tfNickname.getText();
         socketThread.setName(newNickname);
         if ("".equals(newNickname)) return;
+        else if (oldNickname.equals(newNickname)) return;
         String msg = "UPDATE users SET login = '" + newNickname +"', nickname = '" + newNickname +"' WHERE login = '" + oldNickname +"'";
         tfLogin.setText(newNickname);
-//        socketThread.setName(); Надо установить setname клиенту
-        socketThread.sendMessage(Library.getTypeChangeNicknameClient(msg));
+        socketThread.sendMessage(Library.ChangeNicknameClient(msg));
+        socketThread.sendMessage(Library.newNickAuthAccept(newNickname));
         writeMessageToFile(" changed nickname to: " + newNickname, oldNickname);
+        handleMessage(Library.newNickAuthAccept(newNickname));
 
     }
 
@@ -239,19 +241,19 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         try {
             FileReader fl = new FileReader("log.txt");
             BufferedReader reader = new BufferedReader(fl);
-            List<String> arrayList = new ArrayList<String>();
+            List<String> arrayList = new ArrayList<>();
             String str;
             while ((str = reader.readLine()) != null) {
                 arrayList.add(str);
             }
             Collections.reverse(arrayList);
-
-            for (int i = 0; i <= 100; i++) {
-                log.append(arrayList.get(i)+System.lineSeparator());
+                for (int i = 0; i <= 100; i++) {
+                   if(i==arrayList.size()) break;
+                    log.append(arrayList.get(i) + System.lineSeparator());
+                }
+            } catch(IOException e){
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -289,6 +291,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 String[] userArr = users.split(Library.DELIMITER);
                 Arrays.sort(userArr);
                 userList.setListData(userArr);
+                break;
+            case Library.newNick_ACCEPT:
+                setTitle(WINDOW_TITLE + " authorized with nickname " + arr[1]);
                 break;
             default:
                 throw new RuntimeException("Unknown message type: " + value);

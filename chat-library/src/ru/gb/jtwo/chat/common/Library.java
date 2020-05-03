@@ -13,6 +13,7 @@ public class Library {
     public static final String DELIMITER = "±";
     public static final String AUTH_REQUEST = "/auth_request";
     public static final String AUTH_ACCEPT = "/auth_accept";
+    public static final String newNick_ACCEPT = "/newNick_accept";
     public static final String AUTH_DENIED = "/auth_denied";
     public static final String MSG_FORMAT_ERROR = "/msg_format_error";
     // если мы вдруг не поняли, что за сообщение и не смогли разобрать
@@ -22,7 +23,7 @@ public class Library {
     public static final String TYPE_CHANGE_NICKNAME_CLIENT = "/client_change_nickname";
     public static final String USER_LIST = "/user_list";
 
-    public static String getTypeChangeNicknameClient(String msg) {
+    public static String ChangeNicknameClient(String msg) {
         return TYPE_CHANGE_NICKNAME_CLIENT+ DELIMITER + msg;
     }
 
@@ -41,6 +42,10 @@ public class Library {
 
     public static String getAuthAccept(String nickname) {
         return AUTH_ACCEPT + DELIMITER + nickname;
+    }
+
+    public static String newNickAuthAccept(String nickname) {
+        return newNick_ACCEPT + DELIMITER + nickname;
     }
 
     public static String getAuthDenied() {
