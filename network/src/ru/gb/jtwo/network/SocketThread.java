@@ -4,6 +4,8 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class SocketThread extends Thread {
 
@@ -11,12 +13,19 @@ public class SocketThread extends Thread {
     private SocketThreadListener listener;
     private DataOutputStream out;
     private DataInputStream in;
+    ExecutorService es = Executors.newFixedThreadPool(2);
 
     public SocketThread(SocketThreadListener listener, String name, Socket socket) {
         super(name);
         this.socket = socket;
         this.listener = listener;
         start();
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                start();
+            }
+        });
     }
 
     @Override
@@ -54,6 +63,7 @@ public class SocketThread extends Thread {
         try {
             in.close();
             out.close();
+            es.shutdown();
         } catch (IOException e) {
             listener.onSocketException(this, e);
         }
