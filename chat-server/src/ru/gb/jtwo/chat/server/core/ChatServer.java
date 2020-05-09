@@ -66,7 +66,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
-        es.execute(()->new ClientThread(this, name, socket));
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                new ClientThread(ChatServer.this, name, socket);
+            }
+        });
     }
 
     @Override
@@ -80,6 +85,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("Server thread stopped");
         dropAllClients();
         SqlClient.disconnect();
+        es.shutdown();
     }
 
     /**
@@ -100,7 +106,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                     client.getNickname() + " disconnected"));
         }
         sendToAllAuthorizedClients(Library.getUserList(getUsers()));
-        es.shutdown();
     }
 
     @Override
