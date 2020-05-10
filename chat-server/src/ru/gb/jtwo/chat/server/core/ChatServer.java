@@ -9,12 +9,15 @@ import ru.gb.jtwo.network.SocketThreadListener;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
     ServerSocketThread server;
     ChatServerListener listener;
     Vector<SocketThread> clients = new Vector<>();
+    ExecutorService es = Executors.newFixedThreadPool(500);
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
@@ -63,7 +66,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
-        new ClientThread(this, name, socket);
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                new ClientThread(ChatServer.this, name, socket);
+            }
+        });
     }
 
     @Override
@@ -77,6 +85,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("Server thread stopped");
         dropAllClients();
         SqlClient.disconnect();
+        es.shutdown();
     }
 
     /**
