@@ -1,6 +1,7 @@
 package ru.gb.jtwo.chat.server.client;
 
 import ru.gb.jtwo.chat.common.Library;
+import ru.gb.jtwo.chat.server.core.ClientThread;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
 
@@ -8,12 +9,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class ClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
@@ -29,10 +31,12 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JPasswordField tfPassword = new JPasswordField("123");
     private final JButton btnLogin = new JButton("Login");
 
-    private final JPanel panelBottom = new JPanel(new BorderLayout());
+    private final JPanel panelBottom = new JPanel(new GridLayout(2,3));
     private final JButton btnDisconnect = new JButton("<html><b>Disconnect</b></html>");
     private final JTextField tfMessage = new JTextField();
     private final JButton btnSend = new JButton("Send");
+    private final JButton btnChangeNick = new JButton("Change nick");
+    private final JTextField tfNickname = new JTextField();
 
     private final JList<String> userList = new JList<>();
     private boolean shownIoErrors = false;
@@ -71,6 +75,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         btnSend.addActionListener(this);
         btnLogin.addActionListener(this);
         btnDisconnect.addActionListener(this);
+        tfNickname.addActionListener(this);
+        btnChangeNick.addActionListener(this);
 
         panelTop.add(tfIPAddress);
         panelTop.add(tfPort);
@@ -81,6 +87,8 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         panelBottom.add(btnDisconnect, BorderLayout.WEST);
         panelBottom.add(tfMessage, BorderLayout.CENTER);
         panelBottom.add(btnSend, BorderLayout.EAST);
+        panelBottom.add(btnChangeNick, BorderLayout.EAST);
+        panelBottom.add(tfNickname, BorderLayout.CENTER);
         panelBottom.setVisible(false);
 
         add(scrUser, BorderLayout.EAST);
@@ -101,7 +109,11 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             connect();
         } else if (src == btnDisconnect) {
             socketThread.close();
-        } else {
+        }
+        else if (src == btnChangeNick || src == tfNickname) {
+            sendQueryToDB();
+        }
+        else {
             throw new RuntimeException("Unknown source:" + src);
         }
     }
@@ -123,7 +135,34 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         tfMessage.requestFocusInWindow();
         socketThread.sendMessage(Library.getTypeBcastClient(msg));
         //putLog(String.format("%s: %s", username, msg));
-        //wrtMsgToLogFile(msg, username);
+        writeMessageToFile(msg, username);
+    }
+
+    private void sendQueryToDB() {
+        String oldNickname = tfLogin.getText();
+        String newNickname = tfNickname.getText();
+        socketThread.setName(newNickname);
+        if ("".equals(newNickname)) return;
+        else if (oldNickname.equals(newNickname)) return;
+        String msg = "UPDATE users SET login = '" + newNickname +"', nickname = '" + newNickname +"' WHERE login = '" + oldNickname +"'";
+        tfLogin.setText(newNickname);
+        socketThread.sendMessage(Library.ChangeNicknameClient(msg));
+        socketThread.sendMessage(Library.newNickAuthAccept(newNickname));
+        writeMessageToFile(" changed nickname to: " + newNickname, oldNickname);
+        handleMessage(Library.newNickAuthAccept(newNickname));
+
+    }
+
+    private void writeMessageToFile(String msg, String username){
+        try (FileWriter out = new FileWriter("log.txt", true)) {
+            out.write(username + ": " + msg + System.lineSeparator());
+            out.flush();
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
     }
 
     private void wrtMsgToLogFile(String msg, String username) {
@@ -187,13 +226,34 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     }
 
     @Override
-    public void onSocketReady(SocketThread thread, Socket socket) {
+    public  void onSocketReady(SocketThread thread, Socket socket) {
         putLog("Ready");
         panelBottom.setVisible(true);
         panelTop.setVisible(false);
+        tfNickname.setText(tfLogin.getText());
         String login = tfLogin.getText();
         String password = new String(tfPassword.getPassword());
         thread.sendMessage(Library.getAuthRequest(login, password));
+        showMessages();
+    }
+
+    private void showMessages() {
+        try {
+            FileReader fl = new FileReader("log.txt");
+            BufferedReader reader = new BufferedReader(fl);
+            List<String> arrayList = new ArrayList<>();
+            String str;
+            while ((str = reader.readLine()) != null) {
+                arrayList.add(str);
+            }
+            Collections.reverse(arrayList);
+                for (int i = 0; i <= 100; i++) {
+                   if(i==arrayList.size()) break;
+                    log.append(arrayList.get(i) + System.lineSeparator());
+                }
+            } catch(IOException e){
+                e.printStackTrace();
+            }
     }
 
     @Override
@@ -231,6 +291,9 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
                 String[] userArr = users.split(Library.DELIMITER);
                 Arrays.sort(userArr);
                 userList.setListData(userArr);
+                break;
+            case Library.newNick_ACCEPT:
+                setTitle(WINDOW_TITLE + " authorized with nickname " + arr[1]);
                 break;
             default:
                 throw new RuntimeException("Unknown message type: " + value);

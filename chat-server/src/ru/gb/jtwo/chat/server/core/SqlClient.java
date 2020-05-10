@@ -29,6 +29,16 @@ public class SqlClient {
         return null;
     }
 
+    public synchronized static void changeNickName(String query) {
+
+        try {
+            statement.executeUpdate(query);
+
+        } catch (SQLException throwables) {
+            System.out.println("Change nickname exception");
+            throwables.printStackTrace();
+        }
+    }
 
     synchronized static void disconnect() {
         try {
@@ -38,4 +48,16 @@ public class SqlClient {
         }
     }
 
-}
+    synchronized static void addClientToDB(String login, String password) {
+
+            try {
+                connection.setAutoCommit(false);
+                statement.executeUpdate("INSERT INTO users (login, password, nickname) VALUES ('" + login +"', '"+ password + "', '"+ login + "')");
+                connection.commit();
+
+            } catch (SQLException e) {
+                System.out.println("SQL Error in addClient method");
+            }
+        }
+
+    }

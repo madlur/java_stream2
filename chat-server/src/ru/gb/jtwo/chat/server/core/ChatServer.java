@@ -9,12 +9,15 @@ import ru.gb.jtwo.network.SocketThreadListener;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
     ServerSocketThread server;
     ChatServerListener listener;
     Vector<SocketThread> clients = new Vector<>();
+    ExecutorService es = Executors.newFixedThreadPool(500);
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
@@ -63,7 +66,12 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
-        new ClientThread(this, name, socket);
+        es.execute(new Runnable() {
+            @Override
+            public void run() {
+                new ClientThread(ChatServer.this, name, socket);
+            }
+        });
     }
 
     @Override
@@ -77,6 +85,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("Server thread stopped");
         dropAllClients();
         SqlClient.disconnect();
+        es.shutdown();
     }
 
     /**
@@ -127,6 +136,16 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 sendToAllAuthorizedClients(Library.getTypeBroadcast(
                         client.getNickname(), arr[1]));
                 break;
+            case Library.TYPE_CHANGE_NICKNAME_CLIENT:
+                SqlClient.changeNickName(arr[1]);
+
+                break;
+            case Library.newNick_ACCEPT:
+                sendToAllAuthorizedClients(Library.getTypeBroadcast(client.getNickname(), " changed his nickname to " + arr[1]));
+                client.setNickname(arr[1]);
+                sendToAllAuthorizedClients(Library.getUserList(getUsers()));
+
+                break;
             default:
                 client.sendMessage(Library.getMsgFormatError(msg));
         }
@@ -143,11 +162,15 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String password = arr[2];
         String nickname = SqlClient.getNickname(login, password);
         if (nickname == null) {
-
-            putLog("Invalid login attempt: " + login);
-            client.authFail();
-            return;
+            SqlClient.addClientToDB(login,password);
+//            putLog("Invalid login attempt: " + login);
+//            client.authFail();
+            nickname = SqlClient.getNickname(login,password);
+            client.authAccept(nickname);
+            sendToAllAuthorizedClients(Library.getTypeBroadcast("Server: new user", nickname + " join us"));
+//            return;
         }
+
 
         else {
             ClientThread oldClient = findClientByNickname(nickname);
