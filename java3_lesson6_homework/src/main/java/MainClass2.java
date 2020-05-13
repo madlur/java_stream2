@@ -1,6 +1,6 @@
 public class MainClass2 {
 
-            public static boolean method2fast(int[] arr) {
+            public  boolean method2fast(int[] arr) {
             int temp_ones=0;
             int temp_fours=0;
             int another=0;

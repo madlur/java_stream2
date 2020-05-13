@@ -3,7 +3,7 @@ public class MainClass {
 
     private static final int targetValue = 4;
 
-     static int[] method1(int[] arr) throws RuntimeException {
+      int[] method1(int[] arr) throws RuntimeException {
         int tempIndex=0;
         boolean value=false;
         for (int i = 0; i <arr.length ; i++) {
