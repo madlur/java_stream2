@@ -5,15 +5,13 @@ import ru.gb.jtwo.network.ServerSocketThread;
 import ru.gb.jtwo.network.ServerSocketThreadListener;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
-import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
-import java.util.logging.SimpleFormatter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
@@ -21,12 +19,11 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     ChatServerListener listener;
     Vector<SocketThread> clients = new Vector<>();
     ExecutorService es = Executors.newFixedThreadPool(500);
-    Logger logger = Logger.getLogger("ChatServerLog");
-    FileHandler fh;
+
+    Logger logger = LogManager.getLogger(ChatServer.class);
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
-        loggerInit();
     }
 
     public void start(int port) {
@@ -50,16 +47,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         listener.onChatServerMessage(msg);
     }
 
-    public void loggerInit(){
-       try{
-           fh = new FileHandler("ChatServerLog.txt");
-           logger.addHandler(fh);
-           SimpleFormatter formatter = new SimpleFormatter();
-           fh.setFormatter(formatter);
-       } catch (IOException e) {
-           e.printStackTrace();
-       }
-    }
 
     /**
      * Server Socket Thread Listener methods
@@ -99,7 +86,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerException(ServerSocketThread thread, Throwable throwable) {
         putLog("Server exception");
-        logger.warning("Server exception ");
+        logger.warn("Server exception ");
         throwable.printStackTrace();
     }
 
@@ -154,7 +141,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onSocketException(SocketThread thread, Throwable throwable) {
         throwable.printStackTrace();
-        logger.warning("Socket exception " + thread.getName().toString());
+        logger.warn("Socket exception " + thread.getName().toString());
     }
 
     void handleAuthMessage(ClientThread client, String msg) {
@@ -180,7 +167,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                 break;
             default:
                 client.sendMessage(Library.getMsgFormatError(msg));
-                logger.warning(client.getNickname() + " send handle_Aut_message " + msg);
+                logger.warn(client.getNickname() + " send handle_Aut_message " + msg);
         }
 
     }
@@ -189,7 +176,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String[] arr = msg.split(Library.DELIMITER);
         if (arr.length != 3 || !arr[0].equals(Library.AUTH_REQUEST)) {
             client.msgFormatError(msg);
-            logger.warning(client.getNickname() + " send NonHandle_Aut_message " + msg);
+            logger.warn(client.getNickname() + " send NonHandle_Aut_message " + msg);
             return;
         }
         String login = arr[1];
