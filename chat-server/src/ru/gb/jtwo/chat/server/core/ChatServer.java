@@ -5,12 +5,15 @@ import ru.gb.jtwo.network.ServerSocketThread;
 import ru.gb.jtwo.network.ServerSocketThreadListener;
 import ru.gb.jtwo.network.SocketThread;
 import ru.gb.jtwo.network.SocketThreadListener;
-
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Vector;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.FileHandler;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
@@ -18,14 +21,18 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     ChatServerListener listener;
     Vector<SocketThread> clients = new Vector<>();
     ExecutorService es = Executors.newFixedThreadPool(500);
+    Logger logger = Logger.getLogger("ChatServerLog");
+    FileHandler fh;
 
     public ChatServer(ChatServerListener listener) {
         this.listener = listener;
+        loggerInit();
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive())
+        if (server != null && server.isAlive()) {
             putLog("Already running");
+            logger.info("Already running"); }
         else
             server = new ServerSocketThread(this, "Server", port, 2000);
     }
@@ -33,6 +40,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void stop() {
         if (server == null || !server.isAlive()) {
             putLog("Nothing to stop");
+            logger.info("Nothing to stop");
         } else {
             server.interrupt();
         }
@@ -42,6 +50,17 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         listener.onChatServerMessage(msg);
     }
 
+    public void loggerInit(){
+       try{
+           fh = new FileHandler("ChatServerLog.txt");
+           logger.addHandler(fh);
+           SimpleFormatter formatter = new SimpleFormatter();
+           fh.setFormatter(formatter);
+       } catch (IOException e) {
+           e.printStackTrace();
+       }
+    }
+
     /**
      * Server Socket Thread Listener methods
      * */
@@ -49,12 +68,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerStarted(ServerSocketThread thread) {
         putLog("Server thread started");
+        logger.info("Server thread started");
         SqlClient.connect();
     }
 
     @Override
     public void onServerCreated(ServerSocketThread thread, ServerSocket server) {
         putLog("Server socket started");
+        logger.info("Server socket started");
     }
 
     @Override
@@ -65,6 +86,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onSocketAccepted(ServerSocketThread thread, ServerSocket server, Socket socket) {
         putLog("Client connected");
+        logger.info("Client connected");
         String name = "SocketThread " + socket.getInetAddress() + ":" + socket.getPort();
         es.execute(new Runnable() {
             @Override
@@ -77,12 +99,14 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public void onServerException(ServerSocketThread thread, Throwable throwable) {
         putLog("Server exception");
+        logger.warning("Server exception ");
         throwable.printStackTrace();
     }
 
     @Override
     public void onServerStop(ServerSocketThread thread) {
         putLog("Server thread stopped");
+        logger.info("Server thread stopped");
         dropAllClients();
         SqlClient.disconnect();
         es.shutdown();
@@ -95,6 +119,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onSocketStart(SocketThread thread, Socket socket) {
         putLog("Socket started");
+        logger.info("Socket started");
     }
 
     @Override
@@ -106,11 +131,13 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
                     client.getNickname() + " disconnected"));
         }
         sendToAllAuthorizedClients(Library.getUserList(getUsers()));
+        logger.info("Server: "+ client.getNickname() + " disconnected");
     }
 
     @Override
     public synchronized void onSocketReady(SocketThread thread, Socket socket) {
         putLog("Socket ready");
+        logger.info("Socket ready");
         clients.add(thread);
     }
 
@@ -121,11 +148,13 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             handleAuthMessage(client, msg);
         } else
             handleNonAuthMessage(client, msg);
+        logger.info(client.getNickname() + " send message: " + msg);
     }
 
     @Override
     public synchronized void onSocketException(SocketThread thread, Throwable throwable) {
         throwable.printStackTrace();
+        logger.warning("Socket exception " + thread.getName().toString());
     }
 
     void handleAuthMessage(ClientThread client, String msg) {
@@ -135,19 +164,23 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             case Library.TYPE_BCAST_CLIENT:
                 sendToAllAuthorizedClients(Library.getTypeBroadcast(
                         client.getNickname(), arr[1]));
+                logger.info(client.getNickname() + " send handle_Aut_message " + msg);
                 break;
             case Library.TYPE_CHANGE_NICKNAME_CLIENT:
                 SqlClient.changeNickName(arr[1]);
+                logger.info(client.getNickname() + " send handle_Aut_message " + msg);
 
                 break;
             case Library.newNick_ACCEPT:
                 sendToAllAuthorizedClients(Library.getTypeBroadcast(client.getNickname(), " changed his nickname to " + arr[1]));
                 client.setNickname(arr[1]);
                 sendToAllAuthorizedClients(Library.getUserList(getUsers()));
+                logger.info(client.getNickname() + " send handle_Aut_message " + msg);
 
                 break;
             default:
                 client.sendMessage(Library.getMsgFormatError(msg));
+                logger.warning(client.getNickname() + " send handle_Aut_message " + msg);
         }
 
     }
@@ -156,6 +189,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         String[] arr = msg.split(Library.DELIMITER);
         if (arr.length != 3 || !arr[0].equals(Library.AUTH_REQUEST)) {
             client.msgFormatError(msg);
+            logger.warning(client.getNickname() + " send NonHandle_Aut_message " + msg);
             return;
         }
         String login = arr[1];
@@ -168,6 +202,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             nickname = SqlClient.getNickname(login,password);
             client.authAccept(nickname);
             sendToAllAuthorizedClients(Library.getTypeBroadcast("Server: new user", nickname + " join us"));
+            logger.info("Server: new user" + nickname + " join us");
 //            return;
         }
 
@@ -178,9 +213,11 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
             if (oldClient == null) {
                 sendToAllAuthorizedClients(Library.getTypeBroadcast("Server", nickname + " connected"));
+                logger.info("Server: old user" + nickname + " connected");
             } else {
                 oldClient.reconnect();
                 clients.remove(oldClient);
+                logger.info(oldClient.getNickname() + "was removed from ClientsList");
             }
         }
         sendToAllAuthorizedClients(Library.getUserList(getUsers()));
@@ -191,6 +228,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
             ClientThread client = (ClientThread) clients.get(i);
             if (!client.isAuthorized()) continue;
             client.sendMessage(msg);
+// можно было прописать логирование здесь, но в других методах будет лучше, так как можно разделить логи по уровням
         }
     }
 
@@ -198,6 +236,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         for (int i = 0; i < clients.size(); i++) {
             clients.get(i).close();
         }
+        logger.info("all clients were dropped by server");
     }
 
 
